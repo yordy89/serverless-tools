@@ -1,4 +1,17 @@
-export const handler = async (event: any) => {
+interface IResponse {
+  statusCode: number;
+  body: string;
+}
+
+interface IEvent {
+  httpMethod: string;
+  path: string;
+  pathParameters: {
+    id: string;
+  };
+}
+
+export const handler = async (event: IEvent) => {
   if (event.httpMethod !== 'GET') {
     throw new Error(
       `getMethod only accept GET method, you tried: ${event.httpMethod}`
@@ -9,7 +22,10 @@ export const handler = async (event: any) => {
 
   // Get the item from the table
   // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#get-property
-  let response: any = {};
+  let response: IResponse = {
+    statusCode: 200,
+    body: ''
+  };
 
   try {
     response = {
