@@ -76,7 +76,7 @@ jobs:
           stackName: 'buychain-prod'
           stage: 'prod'
 workflows:
-  my-workflow:
+  deploy-dev-demo-workflow:
     jobs:
       - lint-test
       - deploy-dev:
@@ -97,14 +97,6 @@ workflows:
             branches:
               only:
                 - development
-      - hold-prod:
-          type: approval
-          requires:
-            - deploy-demo
-          filters:
-            branches:
-              only:
-                - main
       - deploy-prod:
           context: aws-secrets
           name: deploy-prod
@@ -113,4 +105,4 @@ workflows:
               only:
                 - main
           requires:
-            - hold-prod
+            - lint-test
