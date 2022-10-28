@@ -1,0 +1,66 @@
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@3.1
+  sam: circleci/aws-sam-serverless@4.0.0
+jobs:
+  test:
+    docker:
+      - image: 'circleci/node:16'
+    steps:
+      - checkout
+      - run:
+          name: Install node packages
+          command: npm ci
+      - run:
+          name: Unit test
+          command: npm run test
+workflows:
+  test_and_deploy:
+    jobs:
+      - test:
+          filters:
+            branches:
+              only: deploy-to-aws-with-circleci
+      - sam/deploy:
+          context: aws-secrets
+          name: deploy-dev
+          pre-steps:
+            - aws-cli/setup
+          s3-bucket: $S3_BUCKET
+          stack-name: buychain-development
+          parameter-overrides: 'Stage=dev'
+          template: template.yaml
+          filters:
+            branches:
+              only:
+                - development
+      # - sam/deploy:
+      #     context: aws-secrets
+      #     name: deploy-demo
+      #     pre-steps:
+      #       - aws-cli/setup
+      #     s3-bucket: $S3_BUCKET
+      #     requires:
+      #       - deploy-dev
+      #     stack-name: buychain-demo
+      #     parameter-overrides: 'Stage=demo'
+      #     template: template.yaml
+      #     filters:
+      #       branches:
+      #         only:
+      #           - development
+      # - sam/deploy:
+      #     context: aws-secrets
+      #     name: deploy-demo
+      #     pre-steps:
+      #       - aws-cli/setup
+      #     s3-bucket: $S3_BUCKET
+      #     requires:
+      #       - deploy-dev
+      #     stack-name: buychain-prod
+      #     parameter-overrides: 'Stage=prod'
+      #     template: template.yaml
+      #     filters:
+      #       branches:
+      #         only:
+      #           - development
