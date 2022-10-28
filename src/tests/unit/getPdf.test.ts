@@ -6,6 +6,7 @@ describe('Test getPdf', () => {
   it('should return a get pdf message', async () => {
     const event = {
       httpMethod: 'GET',
+      path: '/pdf',
       pathParameters: {
         id: 'id1'
       }

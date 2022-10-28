@@ -2,8 +2,29 @@ version: 2.1
 orbs:
   aws-cli: circleci/aws-cli@3.1
   sam: circleci/aws-sam-serverless@4.0.0
+commands:
+  aws-cli-setup:
+    steps:
+      - aws-cli/setup
+  sam-install:
+    steps:
+      - sam/install
+  sam-build:
+    steps:
+      - run: npm run build
+  sam-deploy:
+    parameters:
+      stackName:
+        default: 'buychain-dev'
+        type: string
+      stage:
+        default: 'dev'
+        type: string
+    steps:
+      - run: sam deploy --stack-name <<parameters.stackName>> --s3-bucket $S3_BUCKET --capabilities CAPABILITY_IAM --region us-east-1 --parameter-overrides Stage=<<parameters.stage>> --no-confirm-changeset --no-fail-on-empty-changeset
+
 jobs:
-  test:
+  lint-test:
     docker:
       - image: 'circleci/node:16'
     steps:
@@ -12,52 +33,84 @@ jobs:
           name: Install node packages
           command: npm ci
       - run:
+          name: Lint
+          command: npm run lint
+      - run:
           name: Unit test
           command: npm run test
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  deploy-dev:
+    executor: sam/default
+    steps:
+      - attach_workspace:
+          at: .
+      - aws-cli-setup
+      - sam-install
+      - sam-build
+      - sam-deploy:
+          stackName: 'buychain-dev'
+          stage: 'dev'
+  deploy-demo:
+    executor: sam/default
+    steps:
+      - attach_workspace:
+          at: .
+      - aws-cli-setup
+      - sam-install
+      - sam-build
+      - sam-deploy:
+          stackName: 'buychain-demo'
+          stage: 'demo'
+  deploy-prod:
+    executor: sam/default
+    steps:
+      - attach_workspace:
+          at: .
+      - aws-cli-setup
+      - sam-install
+      - sam-build
+      - sam-deploy:
+          stackName: 'buychain-prod'
+          stage: 'prod'
 workflows:
-  test_and_deploy:
+  my-workflow:
     jobs:
-      - test
-      - sam/deploy:
+      - lint-test
+      - deploy-dev:
           context: aws-secrets
           name: deploy-dev
-          pre-steps:
-            - aws-cli/setup
-          s3-bucket: $S3_BUCKET
-          stack-name: buychain-development
-          parameter-overrides: 'Stage=dev'
-          template: template.yaml
-          # filters:
-          #   branches:
-          #     only:
-          #       - development
-      # - sam/deploy:
-      #     context: aws-secrets
-      #     name: deploy-demo
-      #     pre-steps:
-      #       - aws-cli/setup
-      #     s3-bucket: $S3_BUCKET
-      #     requires:
-      #       - deploy-dev
-      #     stack-name: buychain-demo
-      #     parameter-overrides: 'Stage=demo'
-      #     template: template.yaml
-      #     filters:
-      #       branches:
-      #         only:
-      #           - development
-      # - sam/deploy:
-      #     context: aws-secrets
-      #     name: deploy-demo
-      #     pre-steps:
-      #       - aws-cli/setup
-      #     s3-bucket: $S3_BUCKET
-      #     requires:
-      #       - deploy-dev
-      #     stack-name: buychain-prod
-      #     parameter-overrides: 'Stage=prod'
-      #     template: template.yaml
-      #     filters:
-      #       branches:
-      #         only:
-      #           - development
+          requires:
+            - lint-test
+          filters:
+            branches:
+              only:
+                - development
+      - deploy-demo:
+          context: aws-secrets
+          name: deploy-demo
+          requires:
+            - deploy-dev
+          filters:
+            branches:
+              only:
+                - development
+      - hold-prod:
+          type: approval
+          requires:
+            - deploy-demo
+          filters:
+            branches:
+              only:
+                - main
+      - deploy-prod:
+          context: aws-secrets
+          name: deploy-prod
+          filters:
+            branches:
+              only:
+                - main
+          requires:
+            - hold-prod
