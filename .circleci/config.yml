@@ -17,10 +17,7 @@ jobs:
 workflows:
   test_and_deploy:
     jobs:
-      - test:
-          filters:
-            branches:
-              only: deploy-to-aws-with-circleci
+      - test
       - sam/deploy:
           context: aws-secrets
           name: deploy-dev
@@ -30,10 +27,10 @@ workflows:
           stack-name: buychain-development
           parameter-overrides: 'Stage=dev'
           template: template.yaml
-          filters:
-            branches:
-              only:
-                - development
+          # filters:
+          #   branches:
+          #     only:
+          #       - development
       # - sam/deploy:
       #     context: aws-secrets
       #     name: deploy-demo

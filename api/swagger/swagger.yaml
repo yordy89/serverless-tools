@@ -1,0 +1,17 @@
+swagger: '2.0'
+info:
+  version: '1.0'
+  title: 'buychain-dev-api'
+host: 'omc2qb0bpb.execute-api.us-east-1.amazonaws.com'
+basePath: '/dev'
+schemes:
+  - 'https'
+paths:
+  /get-pdf:
+    get:
+      responses: {}
+      x-amazon-apigateway-integration:
+        type: 'aws_proxy'
+        httpMethod: 'POST'
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:213274699106:function:buychain-dev-getPdf-869uIfxALWQ6/invocations'
+        passthroughBehavior: 'when_no_match'
