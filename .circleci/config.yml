@@ -3,14 +3,10 @@ orbs:
   aws-cli: circleci/aws-cli@3.1
   sam: circleci/aws-sam-serverless@4.0.0
 commands:
-  aws-cli-setup:
+  sam-cli-setup:
     steps:
       - aws-cli/setup
-  sam-install:
-    steps:
       - sam/install
-  sam-build:
-    steps:
       - run: npm run build
   sam-deploy:
     parameters:
@@ -47,9 +43,7 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - aws-cli-setup
-      - sam-install
-      - sam-build
+      - sam-cli-setup
       - sam-deploy:
           stackName: 'buychain-dev'
           stage: 'dev'
@@ -58,9 +52,7 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - aws-cli-setup
-      - sam-install
-      - sam-build
+      - sam-cli-setup
       - sam-deploy:
           stackName: 'buychain-demo'
           stage: 'demo'
@@ -69,9 +61,7 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - aws-cli-setup
-      - sam-install
-      - sam-build
+      - sam-cli-setup
       - sam-deploy:
           stackName: 'buychain-prod'
           stage: 'prod'
