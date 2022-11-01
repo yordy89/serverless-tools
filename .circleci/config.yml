@@ -76,23 +76,24 @@ workflows:
             - lint-test
           filters:
             branches:
-              only:
-                - development
-      - deploy-demo:
-          context: aws-secrets
-          name: deploy-demo
-          requires:
-            - deploy-dev
-          filters:
-            branches:
-              only:
-                - development
-      - deploy-prod:
-          context: aws-secrets
-          name: deploy-prod
-          filters:
-            branches:
-              only:
-                - main
-          requires:
-            - lint-test
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)+(-dev[0-9]+)?/
+      # - deploy-demo:
+      #     context: aws-secrets
+      #     name: deploy-demo
+      #     requires:
+      #       - deploy-dev
+      #     filters:
+      #       branches:
+      #         only:
+      #           - development
+      # - deploy-prod:
+      #     context: aws-secrets
+      #     name: deploy-prod
+      #     filters:
+      #       branches:
+      #         only:
+      #           - main
+      #     requires:
+      #       - lint-test
