@@ -68,7 +68,12 @@ jobs:
 workflows:
   deploy-dev-demo-workflow:
     jobs:
-      - lint-test
+      - lint-test:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)+/
       - deploy-dev:
           context: aws-secrets
           name: deploy-dev
@@ -78,22 +83,42 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /v[0-9]+(\.[0-9]+)+(\.[0-9]+)+(-dev[0-9]+)?/
-      # - deploy-demo:
-      #     context: aws-secrets
-      #     name: deploy-demo
-      #     requires:
-      #       - deploy-dev
-      #     filters:
-      #       branches:
-      #         only:
-      #           - development
-      # - deploy-prod:
-      #     context: aws-secrets
-      #     name: deploy-prod
-      #     filters:
-      #       branches:
-      #         only:
-      #           - main
-      #     requires:
-      #       - lint-test
+              only: /v[0-9]+(\.[0-9]+)+/
+      - hold-deploy-demo:
+          type: approval
+          requires:
+            - deploy-dev
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)+/
+      - deploy-demo:
+          context: aws-secrets
+          name: deploy-demo
+          requires:
+            - hold-deploy-demo
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)+/
+      - hold-deploy-prod:
+          type: approval
+          requires:
+            - deploy-demo
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)+/
+      - deploy-prod:
+          context: aws-secrets
+          name: deploy-prod
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)+/
+          requires:
+            - hold-deploy-prod
