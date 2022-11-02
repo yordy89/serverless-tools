@@ -75,7 +75,10 @@ filter_workflow-jobs: &filter_workflow-jobs
 workflows:
   buychain-deploy-workflow:
     jobs:
-      - lint-test
+      - lint-test:
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)+/
       - deploy-dev:
           context: aws-secrets
           name: deploy-dev
