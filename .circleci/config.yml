@@ -68,7 +68,7 @@ jobs:
 
 filter_workflow-jobs: &filter_workflow-jobs
   branches:
-    only: main
+    ignore: /.*/
   tags:
     only: /v[0-9]+(\.[0-9]+)+/
 
@@ -83,7 +83,9 @@ workflows:
             - lint-test
           filters:
             branches:
-              only: development
+              only: develop
+            tags:
+              ignore: /.*/
       - deploy-demo:
           context: aws-secrets
           name: deploy-demo
