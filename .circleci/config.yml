@@ -68,8 +68,7 @@ jobs:
 
 filter_workflow-jobs: &filter_workflow-jobs
   branches:
-    only: main
-    ignore: develop
+    ignore: /.*/
   tags:
     only: /v[0-9]+(\.[0-9]+)+/
 
