@@ -18,7 +18,7 @@ export const handler = async (event: IEvent) => {
     );
   }
   // All log statements are written to CloudWatch
-  console.info('received:', event);
+  console.info('received event:', event);
 
   // Get the item from the table
   // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#get-property
