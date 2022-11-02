@@ -84,8 +84,6 @@ workflows:
           filters:
             branches:
               only: develop
-            tags:
-              ignore: /.*/
       - deploy-demo:
           context: aws-secrets
           name: deploy-demo
