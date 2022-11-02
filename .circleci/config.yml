@@ -65,15 +65,18 @@ jobs:
       - sam-deploy:
           stackName: 'buychain-prod'
           stage: 'prod'
+
+filter_workflow-jobs: &filter_workflow-jobs
+  branches:
+    only: main
+    ignore: develop
+  tags:
+    only: /v[0-9]+(\.[0-9]+)+/
+
 workflows:
-  deploy-dev-demo-workflow:
+  buychain-deploy-workflow:
     jobs:
-      - lint-test:
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /v[0-9]+(\.[0-9]+)+/
+      - lint-test
       - deploy-dev:
           context: aws-secrets
           name: deploy-dev
@@ -81,44 +84,26 @@ workflows:
             - lint-test
           filters:
             branches:
-              ignore: /.*/
+              only: develop
             tags:
-              only: /v[0-9]+(\.[0-9]+)+/
-      - hold-deploy-demo:
-          type: approval
-          requires:
-            - deploy-dev
-          filters:
-            branches:
               ignore: /.*/
-            tags:
-              only: /v[0-9]+(\.[0-9]+)+/
       - deploy-demo:
           context: aws-secrets
           name: deploy-demo
           requires:
-            - hold-deploy-demo
+            - lint-test
           filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /v[0-9]+(\.[0-9]+)+/
+            <<: *filter_workflow-jobs
       - hold-deploy-prod:
           type: approval
           requires:
             - deploy-demo
           filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /v[0-9]+(\.[0-9]+)+/
+            <<: *filter_workflow-jobs
       - deploy-prod:
           context: aws-secrets
           name: deploy-prod
           filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /v[0-9]+(\.[0-9]+)+/
+            <<: *filter_workflow-jobs
           requires:
             - hold-deploy-prod
