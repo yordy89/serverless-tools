@@ -24,6 +24,7 @@
     "default-case": "warn",
     "no-param-reassign": "warn",
     "no-await-in-loop": "warn",
+    "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-unused-vars": [
       "error",
       {

@@ -29,6 +29,9 @@ jobs:
           name: Install node packages
           command: npm ci
       - run:
+          name: Create layers
+          command: cd src/layers/generate-pdf/nodejs/node_modules/pdf/ && npm ci
+      - run:
           name: Lint
           command: npm run lint
       - run:
@@ -86,7 +89,7 @@ workflows:
             - lint-test
           filters:
             branches:
-              only: develop
+              only: development
       - deploy-demo:
           context: aws-secrets
           name: deploy-demo
