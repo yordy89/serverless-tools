@@ -90,12 +90,6 @@ Resources:
       Environment:
         Variables:
           MICROSERVICE_AUTHORIZATION_HOST: !Sub '{{resolve:ssm:microservice_auth_host_${Stage}:1}}'
-      Policies:
-        - Statement:
-            - Action:
-                - ssm:GetParameter
-              Effect: Allow
-              Resource: '*'
   generatePdf:
     Type: AWS::Serverless::Function
     Properties:
@@ -116,12 +110,6 @@ Resources:
       Environment:
         Variables:
           MICROSERVICE_DOCUMENTS_HOST: !Sub '{{resolve:ssm:microservice_documents_host_${Stage}:1}}'
-      Policies:
-        - Statement:
-            - Action:
-                - ssm:GetParameter
-              Effect: Allow
-              Resource: '*'
 
   generatePdfSystem:
     Type: AWS::Serverless::Function
@@ -146,12 +134,6 @@ Resources:
       Environment:
         Variables:
           MICROSERVICE_DOCUMENTS_HOST: !Sub '{{resolve:ssm:microservice_documents_host_${Stage}:1}}'
-      Policies:
-        - Statement:
-            - Action:
-                - ssm:GetParameter
-              Effect: Allow
-              Resource: '*'
 Outputs:
   WebEndpoint:
     Description: 'API Gateway endpoint URL for stage'
