@@ -11,6 +11,7 @@ const handler = async (event: APIGatewayProxyEvent) => {
     }
 
     const file = await pdf.generate(html);
+    cosnsole.log('file', file);
     const user = {
       companyId,
       user: {
