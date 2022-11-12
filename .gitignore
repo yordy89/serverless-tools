@@ -34,9 +34,12 @@ bower_components
 build/Release
 
 # Dependency directories
-node_modules/
+node_modules/*
+!src/layers/generate-pdf/nodejs/node_modules/*
+src/layers/generate-pdf/nodejs/node_modules/pdf/node_modules/*
 jspm_packages/
 .aws-sam/
+samconfig.toml
 
 # Typescript v1 declaration files
 typings/
@@ -58,6 +61,7 @@ typings/
 
 # dotenv environment variables file
 .env
+env.json
 
 # next.js build output
 .next

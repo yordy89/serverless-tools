@@ -4,11 +4,10 @@ Description: >-
 Transform: AWS::Serverless-2016-10-31
 Globals:
   Function:
-    Runtime: nodejs16.x
+    Runtime: nodejs14.x
     Architectures:
       - x86_64
     MemorySize: 128
-    CodeUri: src/lambdas/
     Timeout: 30
 
 Parameters:
@@ -27,18 +26,114 @@ Resources:
     Properties:
       Name: !Sub ${AWS::StackName}-api
       StageName: !Ref Stage
-  getPdf:
+      Auth:
+        DefaultAuthorizer: LambdaAuthorizer
+        Authorizers:
+          LambdaAuthorizer:
+            FunctionPayloadType: TOKEN
+            FunctionArn: !GetAtt LambdaAuthorizerFunction.Arn
+
+  GeneratePdfLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      Description: Serverless Chrome/Puppeteer Layer
+      ContentUri: layers/generate-pdf
+      CompatibleRuntimes:
+        - nodejs14.x
+    Metadata:
+      BuildMethod: nodejs14.x
+
+  ApiKeyAuthorizer:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: !Sub ${AWS::StackName}-api-key
+      Enabled: true
+      GenerateDistinctId: false
+      StageKeys:
+        - RestApiId: !Ref ApiGatewayRestApi
+          StageName: !Ref Stage
+
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      ApiStages:
+        - ApiId: !Ref ApiGatewayRestApi
+          Stage: !Ref Stage
+      Quota:
+        Limit: 1000
+        Period: MONTH
+      Throttle:
+        BurstLimit: 100
+        RateLimit: 100
+      UsagePlanName: !Sub ${AWS::StackName}-usage-plan
+
+  UsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKeyAuthorizer
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+  LambdaAuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: getPdf.handler
-      Description: Get PDF
+      CodeUri: src/authorizer/
+      Handler: authorizer.handler
+      Timeout: 60
       Events:
         Api:
           Type: Api
           Properties:
-            Path: /get-pdf
-            Method: GET
             RestApiId: !Ref ApiGatewayRestApi
+            Path: /auth
+            Method: get
+      Environment:
+        Variables:
+          MICROSERVICE_AUTHORIZATION_HOST: !Sub '{{resolve:ssm:microservice_auth_host_${Stage}:1}}'
+  generatePdf:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/generatePDF
+      Handler: generatePdf.handler
+      Description: generate pdf
+      Timeout: 60
+      MemorySize: 512
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /pdf
+            Method: post
+            RestApiId: !Ref ApiGatewayRestApi
+      Layers:
+        - !Ref GeneratePdfLayer
+      Environment:
+        Variables:
+          MICROSERVICE_DOCUMENTS_HOST: !Sub '{{resolve:ssm:microservice_documents_host_${Stage}:1}}'
+
+  generatePdfSystem:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/generatePDF
+      Handler: generatePdfSystem.handler
+      Description: generate pdf from system
+      Timeout: 60
+      MemorySize: 512
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /pdf/system
+            Method: post
+            RestApiId: !Ref ApiGatewayRestApi
+            Auth:
+              ApiKeyRequired: true
+              Authorizer: NONE
+      Layers:
+        - !Ref GeneratePdfLayer
+      Environment:
+        Variables:
+          MICROSERVICE_DOCUMENTS_HOST: !Sub '{{resolve:ssm:microservice_documents_host_${Stage}:1}}'
 Outputs:
   WebEndpoint:
     Description: 'API Gateway endpoint URL for stage'
