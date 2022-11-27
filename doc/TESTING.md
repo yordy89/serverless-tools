@@ -6,4 +6,4 @@
 
 ## Unit Test
 
-- All the unit tests: `npm run test-unit`
+- All the unit tests: `npm run test`

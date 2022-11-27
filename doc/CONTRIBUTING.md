@@ -1,18 +1,18 @@
 # Contributing to BuyChain
 
-* [Code Contributions](#code-contributions)
-* [Commit message guidelines](#commit-message-guidelines)
+- [Code Contributions](#code-contributions)
+- [Commit message guidelines](#commit-message-guidelines)
 
 ## Code Contributions
 
 #### Step 1: Clone
 
-Clone the project on [GitHub](https://github.com/buychain/accounting-api.git)
+Clone the project on [GitHub](https://github.com/buychain/serverless-tools.git)
 
 ```text
-  $ git clone https://github.com/buychain/accounting-api.git
-  $ cd accounting-api
-```   
+  $ git clone https://github.com/buychain/serverless-tools.git
+  $ cd serverless-tools
+```
 
 #### Step 2: Branch
 
@@ -28,7 +28,7 @@ Your code is unlikely be committed if linting is not applied. Make sure you appl
 
 ```text
   $ npm run lint
-``` 
+```
 
 #### Step 4: Commit
 
@@ -74,24 +74,27 @@ Open a Pull Request with a clear title and description against the `development`
 The commit message should describe what changed and why.
 
 1. The first line should:
-  * contain a short description of the change (no more than 72 characters)
-  * be prefixed with the name of the changed subsystem
-  * be entirely in lowercase with the exception of proper nouns, acronyms, and the words that refer to code, like
-    function/variable names
 
-   Examples:
+- contain a short description of the change (no more than 72 characters)
+- be prefixed with the name of the changed subsystem
+- be entirely in lowercase with the exception of proper nouns, acronyms, and the words that refer to code, like
+  function/variable names
 
-  * `lib: implement getStatus() method in status lib`
-  * `deps: add eslint package in dev dependencies`
+Examples:
+
+- `lib: implement getStatus() method in status lib`
+- `deps: add eslint package in dev dependencies`
+
 2. Keep the second line blank.
 3. Wrap all other lines at 72 columns.
-  * describe each line in logical chunks
-  * start each line with: space hyphen space ( - ...)
-  * be entirely in lowercase with the exception of proper nouns, acronyms, and the words that refer to code, like
-    function/variable names
 
-   Examples:
+- describe each line in logical chunks
+- start each line with: space hyphen space ( - ...)
+- be entirely in lowercase with the exception of proper nouns, acronyms, and the words that refer to code, like
+  function/variable names
 
-  * ` - add order field support`
-  * ` - sync JSDoc`
-  * ` - update usage`
+Examples:
+
+- ` - add order field support`
+- ` - sync JSDoc`
+- ` - update usage`
