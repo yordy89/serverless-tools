@@ -20,7 +20,6 @@ export const upload = async (
     URL =
       `${process.env.MICROSERVICE_DOCUMENTS_HOST}/v1/documents/system` || '';
   }
-
   const { data } = await axios.post(URL, formData, {
     headers: {
       ...formData.getHeaders(),

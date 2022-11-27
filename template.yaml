@@ -85,7 +85,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref ApiGatewayRestApi
-            Path: /auth
+            Path: /authorizer
             Method: get
       Environment:
         Variables:
@@ -134,6 +134,82 @@ Resources:
       Environment:
         Variables:
           MICROSERVICE_DOCUMENTS_HOST: !Sub '{{resolve:ssm:microservice_documents_host_${Stage}:1}}'
+
+  AuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: auth
+
+  AuthApiService:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !Ref AuthResource
+      PathPart: '{proxy+}'
+
+  AuthAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref AuthApiService
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      RequestParameters:
+          method.request.path.proxy: true
+          method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+            integration.request.path.proxy: "method.request.path.proxy"
+            integration.request.header.Authorization: "method.request.header.Authorization"
+        Uri: !Sub '{{resolve:ssm:microservice_auth_host_${Stage}:2}}/{proxy}'
+
+  AccountingResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: accounting
+
+  AccountingApiService:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !Ref AccountingResource
+      PathPart: '{proxy+}'
+
+  AccountingAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref AccountingApiService
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      RequestParameters:
+          method.request.path.proxy: true
+          method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+            integration.request.path.proxy: "method.request.path.proxy"
+            integration.request.header.Authorization: "method.request.header.Authorization"
+        Uri: !Sub '{{resolve:ssm:microservice_accounting_host_${Stage}:1}}/{proxy}'
+
+  Deployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - AuthAnyMethod
+      - AccountingAnyMethod
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      StageName: !Ref Stage
+
 Outputs:
   WebEndpoint:
     Description: 'API Gateway endpoint URL for stage'
