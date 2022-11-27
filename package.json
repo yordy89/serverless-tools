@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "test-coverage-unit": "jest --coveragePathIgnorePatterns=mock --coverage --silent --env=node",
     "build": "webpack-cli",
     "watch": "webpack-cli -w",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",

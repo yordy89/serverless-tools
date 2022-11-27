@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  serverless-tools
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  AuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: auth
+
+  AuthApiService:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !Ref AuthResource
+      PathPart: '{proxy+}'
+
+  AuthAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref AuthApiService
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      RequestParameters:
+          method.request.path.proxy: true
+          method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+            integration.request.path.proxy: "method.request.path.proxy"
+            integration.request.header.Authorization: "method.request.header.Authorization"
+        Uri: !Sub '{{resolve:ssm:microservice_auth_host_${Stage}:1}}/{proxy}'
+
+  AccountingResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: accounting
+
+  AccountingApiService:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !Ref AccountingResource
+      PathPart: '{proxy+}'
+
+  AccountingAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref AccountingApiService
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      RequestParameters:
+          method.request.path.proxy: true
+          method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+            integration.request.path.proxy: "method.request.path.proxy"
+            integration.request.header.Authorization: "method.request.header.Authorization"
+        Uri: !Sub '{{resolve:ssm:microservice_accounting_host_${Stage}:1}}/{proxy}'
+

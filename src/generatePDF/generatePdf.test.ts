@@ -61,7 +61,6 @@ describe('Test generatePdf', () => {
 
   it('should return a error message with html no provided', async () => {
     const result = await handler(event);
-    console.log(result);
     const expectedResult = {
       statusCode: 500,
       body: JSON.stringify({ message: 'No html provided' })
