@@ -43,36 +43,6 @@ Resources:
     Metadata:
       BuildMethod: nodejs14.x
 
-  ApiKeyAuthorizer:
-    Type: AWS::ApiGateway::ApiKey
-    Properties:
-      Name: !Sub ${AWS::StackName}-api-key
-      Enabled: true
-      GenerateDistinctId: false
-      StageKeys:
-        - RestApiId: !Ref ApiGatewayRestApi
-          StageName: !Ref Stage
-
-  UsagePlan:
-    Type: AWS::ApiGateway::UsagePlan
-    Properties:
-      ApiStages:
-        - ApiId: !Ref ApiGatewayRestApi
-          Stage: !Ref Stage
-      Quota:
-        Limit: 1000
-        Period: MONTH
-      Throttle:
-        BurstLimit: 100
-        RateLimit: 100
-      UsagePlanName: !Sub ${AWS::StackName}-usage-plan
-
-  UsagePlanKey:
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !Ref ApiKeyAuthorizer
-      KeyType: API_KEY
-      UsagePlanId: !Ref UsagePlan
 
   LambdaAuthorizerFunction:
     Type: AWS::Serverless::Function
