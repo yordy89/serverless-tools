@@ -41,6 +41,15 @@ jobs:
           root: .
           paths:
             - .
+  semantic-release:
+    docker:
+      - image: 'circleci/node:16'
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Semantic release
+          command: npx semantic-release
   deploy-dev:
     executor: sam/default
     steps:
@@ -82,6 +91,12 @@ workflows:
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)+/
+      - semantic-release:
+          requires:
+            - lint-test
+          filters:
+            branches:
+              only: main
       - deploy-dev:
           context: aws-secrets
           name: deploy-dev
