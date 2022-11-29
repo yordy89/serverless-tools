@@ -47,6 +47,8 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - run: mkdir -p ~/.ssh
+      - run: ssh-keyscan github.com >> ~/.ssh/known_hosts
       - run:
           name: Semantic release
           command: npx semantic-release
