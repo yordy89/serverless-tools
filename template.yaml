@@ -77,16 +77,9 @@ Resources:
   LambdaAuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/authorizer/
+      CodeUri: src/authorizer
       Handler: authorizer.handler
       Timeout: 60
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            RestApiId: !Ref ApiGatewayRestApi
-            Path: /authorizer
-            Method: get
       Environment:
         Variables:
           MICROSERVICE_AUTHORIZATION_HOST: !Sub '{{resolve:ssm:microservice_auth_host_${Stage}:1}}'
@@ -166,7 +159,7 @@ Resources:
         RequestParameters:
             integration.request.path.proxy: "method.request.path.proxy"
             integration.request.header.Authorization: "method.request.header.Authorization"
-        Uri: !Sub '{{resolve:ssm:microservice_auth_host_${Stage}:2}}/{proxy}'
+        Uri: !Sub '{{resolve:ssm:microservice_auth_host_${Stage}:1}}/{proxy}'
 
   AccountingResource:
     Type: AWS::ApiGateway::Resource
@@ -201,11 +194,215 @@ Resources:
             integration.request.header.Authorization: "method.request.header.Authorization"
         Uri: !Sub '{{resolve:ssm:microservice_accounting_host_${Stage}:1}}/{proxy}'
 
+  BaseApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: base
+
+  BaseApiService:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !Ref BaseApiResource
+      PathPart: '{proxy+}'
+
+  BaseApiAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref BaseApiService
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      RequestParameters:
+          method.request.path.proxy: true
+          method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+            integration.request.path.proxy: "method.request.path.proxy"
+            integration.request.header.Authorization: "method.request.header.Authorization"
+        Uri: !Sub '{{resolve:ssm:microservice_base_host_${Stage}:1}}/{proxy}'
+
+  DocumentsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: documents
+  
+  DocumentsApiService:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !Ref DocumentsResource
+      PathPart: '{proxy+}'
+
+  DocumentsAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref DocumentsApiService
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      RequestParameters:
+          method.request.path.proxy: true
+          method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+            integration.request.path.proxy: "method.request.path.proxy"
+            integration.request.header.Authorization: "method.request.header.Authorization"
+        Uri: !Sub '{{resolve:ssm:microservice_documents_host_${Stage}:1}}/{proxy}'
+     
+  SearchResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: search
+  
+  SearchApiService:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !Ref SearchResource
+      PathPart: '{proxy+}'
+
+  SearchAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref SearchApiService
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      RequestParameters:
+          method.request.path.proxy: true
+          method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+            integration.request.path.proxy: "method.request.path.proxy"
+            integration.request.header.Authorization: "method.request.header.Authorization"
+        Uri: !Sub '{{resolve:ssm:microservice_search_host_${Stage}:1}}/{proxy}'
+
+  MediaResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: media
+  
+  MediaApiService:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !Ref MediaResource
+      PathPart: '{proxy+}'
+
+  MediaAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref MediaApiService
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      RequestParameters:
+          method.request.path.proxy: true
+          method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+            integration.request.path.proxy: "method.request.path.proxy"
+            integration.request.header.Authorization: "method.request.header.Authorization"
+        Uri: !Sub '{{resolve:ssm:microservice_media_host_${Stage}:1}}/{proxy}'
+
+  ReportsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: reports
+  
+  ReportsApiService:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !Ref ReportsResource
+      PathPart: '{proxy+}'
+
+  ReportsAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ReportsApiService
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      RequestParameters:
+          method.request.path.proxy: true
+          method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+            integration.request.path.proxy: "method.request.path.proxy"
+            integration.request.header.Authorization: "method.request.header.Authorization"
+        Uri: !Sub '{{resolve:ssm:microservice_reports_host_${Stage}:1}}/{proxy}'
+
+  AttachmentsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: attachments
+  
+  AttachmentsApiService:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !Ref AttachmentsResource
+      PathPart: '{proxy+}'
+
+  AttachmentsAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref AttachmentsApiService
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      RequestParameters:
+          method.request.path.proxy: true
+          method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+            integration.request.path.proxy: "method.request.path.proxy"
+            integration.request.header.Authorization: "method.request.header.Authorization"
+        Uri: !Sub '{{resolve:ssm:microservice_attachments_host_${Stage}:1}}/{proxy}'
+
   Deployment:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
       - AuthAnyMethod
       - AccountingAnyMethod
+      - BaseApiAnyMethod
+      - DocumentsAnyMethod
+      - SearchAnyMethod
+      - MediaAnyMethod
+      - ReportsAnyMethod
+      - AttachmentsAnyMethod
     Properties:
       RestApiId: !Ref ApiGatewayRestApi
       StageName: !Ref Stage
