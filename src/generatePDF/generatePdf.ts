@@ -10,7 +10,7 @@ const handler = async (event: APIGatewayProxyEvent) => {
       throw new Error('No html provided');
     }
     const file = await pdf.generate(html);
-
+    console.log('file');
     const uploadDocResponse = await upload(
       event.headers.Authorization,
       name,
