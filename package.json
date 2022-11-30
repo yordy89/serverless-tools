@@ -59,7 +59,7 @@
         "preset": "angular",
         "releaseRules": [
           {"type": "feat", "release": "minor"},
-          {"type": "fix", "scope": "test", "release": "patch"},
+          {"type": "fix", "release": "patch"},
           {"type": "perf", "release": "patch"},
           {"type": "refactor", "release": "patch"},
           {"type": "style", "release": "patch"},
@@ -69,7 +69,7 @@
           {"type": "build", "release": "patch"},
           {"type": "ci", "release": "patch"},
           {"type": "revert", "release": "patch"},
-          {"type": "branking", "release": "major"}
+          {"type": "breaking change", "release": "major"}
         ]
       }],
       "@semantic-release/release-notes-generator",
