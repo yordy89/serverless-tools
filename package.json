@@ -69,7 +69,7 @@
           {"type": "build", "release": "patch"},
           {"type": "ci", "release": "patch"},
           {"type": "revert", "release": "patch"},
-          {"type": "branking change", "release": "major"}
+          {"type": "branking", "release": "major"}
         ]
       }],
       "@semantic-release/release-notes-generator",
