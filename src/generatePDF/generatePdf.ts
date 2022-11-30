@@ -12,6 +12,7 @@ const handler = async (event: APIGatewayProxyEvent) => {
     const file = await pdf.generate(html);
     console.log('file');
     console.log('second');
+    console.log('third');
     const uploadDocResponse = await upload(
       event.headers.Authorization,
       name,
