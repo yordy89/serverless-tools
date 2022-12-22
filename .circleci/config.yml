@@ -106,7 +106,7 @@ workflows:
             - lint-test
           filters:
             branches:
-              only: develop
+              only: development
       - deploy-demo:
           context: aws-secrets
           name: deploy-demo
