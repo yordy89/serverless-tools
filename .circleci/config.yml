@@ -94,6 +94,7 @@ workflows:
             tags:
               only: /v[0-9]+(\.[0-9]+)+/
       - semantic-release:
+          context: semantic-release
           requires:
             - lint-test
           filters:
