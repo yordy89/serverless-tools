@@ -16,7 +16,7 @@ disable_rollback = true
 [default.deploy]
 [default.deploy.parameters]
 stack_name = "buychain-dev"
-s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-xhwbrh59hvve"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1xipu96ga0wpp"
 s3_prefix = "buychain-dev"
 region = "us-east-1"
 confirm_changeset = true

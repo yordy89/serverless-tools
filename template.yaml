@@ -20,6 +20,12 @@ Parameters:
       - prod
     Description: Stage name
 
+Conditions:
+  IsProd:
+    Fn::Equals:
+      - !Ref Stage
+      - prod
+
 Resources:
   ApiGatewayRestApi:
     Type: AWS::Serverless::Api
@@ -97,13 +103,113 @@ Resources:
         Variables:
           MICROSERVICE_DOCUMENTS_HOST: !Sub '{{resolve:ssm:microservice_documents_host_${Stage}:1}}'
 
+  CloudFrontOriginAccessIdentity:
+    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: 'Serverless website OA'
+
   FrontendDeployBucket:
-    Type: "AWS::S3::Bucket"
+    Type: 'AWS::S3::Bucket'
     Properties:
       BucketName: !Sub ${AWS::StackName}-tech
-      AccessControl: PublicRead
-      WebsiteConfiguration:
-        IndexDocument: index.html
+      AccessControl: Private
+
+  FrontendDeployBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref FrontendDeployBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource: !Sub 'arn:aws:s3:::${FrontendDeployBucket}/*'
+            Principal: 
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  CloudFrontWAF:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: CloudFrontWAF
+      Scope: CLOUDFRONT
+      VisibilityConfig:
+        CloudWatchMetricsEnabled: false
+        MetricName: !Sub ${AWS::StackName}-ACL
+        SampledRequestsEnabled: false
+      DefaultAction:
+        Allow: {}
+      Rules:
+        - Name: MySqlInjectionRule
+          Priority: 1
+          Statement:
+            SqliMatchStatement:
+              FieldToMatch:
+                UriPath: {}
+              TextTransformations:
+                - Type: LOWERCASE
+                  Priority: 1
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub ${AWS::StackName}-MySqlInjectionRule
+          Action:
+            Block: {}
+        - Name: MyXssRule
+          Priority: 2
+          Statement:
+            XssMatchStatement:
+              FieldToMatch:
+                UriPath: {}
+              TextTransformations:
+                - Type: LOWERCASE
+                  Priority: 1
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub ${AWS::StackName}-MyXssRule
+          Action:
+            Block: {}
+    Condition: IsProd
+
+  CloudfrontDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    DependsOn:
+      - CloudFrontOriginAccessIdentity
+      - FrontendDeployBucket
+    Properties:
+      DistributionConfig:
+        Comment: 'Cloudfront distribution for buychain ${Stage}'
+        DefaultRootObject: 'index.html'
+        PriceClass: PriceClass_100
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - Id: !Sub ${AWS::StackName}-frontend
+            DomainName: !GetAtt FrontendDeployBucket.DomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+        DefaultCacheBehavior:
+          Compress: true
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: !Sub ${AWS::StackName}-frontend
+          ViewerProtocolPolicy: !If
+            - IsProd
+            - redirect-to-https
+            - allow-all
+        WebACLId: !If
+          - IsProd
+          - !GetAtt CloudFrontWAF.Arn
+          - !Ref AWS::NoValue
+      Tags:
+        - Key: Environment
+          Value: !Ref Stage
 
   AuthResource:
     Type: AWS::ApiGateway::Resource
@@ -127,15 +233,15 @@ Resources:
       AuthorizationType: NONE
       HttpMethod: ANY
       RequestParameters:
-          method.request.path.proxy: true
-          method.request.header.Authorization: true
+        method.request.path.proxy: true
+        method.request.header.Authorization: true
       Integration:
         Type: HTTP_PROXY
         IntegrationHttpMethod: ANY
         PassthroughBehavior: WHEN_NO_MATCH
         RequestParameters:
-            integration.request.path.proxy: "method.request.path.proxy"
-            integration.request.header.Authorization: "method.request.header.Authorization"
+          integration.request.path.proxy: 'method.request.path.proxy'
+          integration.request.header.Authorization: 'method.request.header.Authorization'
         Uri: !Sub '{{resolve:ssm:microservice_auth_host_${Stage}:1}}/{proxy}'
 
   AccountingResource:
@@ -160,15 +266,15 @@ Resources:
       AuthorizationType: NONE
       HttpMethod: ANY
       RequestParameters:
-          method.request.path.proxy: true
-          method.request.header.Authorization: true
+        method.request.path.proxy: true
+        method.request.header.Authorization: true
       Integration:
         Type: HTTP_PROXY
         IntegrationHttpMethod: ANY
         PassthroughBehavior: WHEN_NO_MATCH
         RequestParameters:
-            integration.request.path.proxy: "method.request.path.proxy"
-            integration.request.header.Authorization: "method.request.header.Authorization"
+          integration.request.path.proxy: 'method.request.path.proxy'
+          integration.request.header.Authorization: 'method.request.header.Authorization'
         Uri: !Sub '{{resolve:ssm:microservice_accounting_host_${Stage}:1}}/{proxy}'
 
   BaseApiResource:
@@ -193,15 +299,15 @@ Resources:
       AuthorizationType: NONE
       HttpMethod: ANY
       RequestParameters:
-          method.request.path.proxy: true
-          method.request.header.Authorization: true
+        method.request.path.proxy: true
+        method.request.header.Authorization: true
       Integration:
         Type: HTTP_PROXY
         IntegrationHttpMethod: ANY
         PassthroughBehavior: WHEN_NO_MATCH
         RequestParameters:
-            integration.request.path.proxy: "method.request.path.proxy"
-            integration.request.header.Authorization: "method.request.header.Authorization"
+          integration.request.path.proxy: 'method.request.path.proxy'
+          integration.request.header.Authorization: 'method.request.header.Authorization'
         Uri: !Sub '{{resolve:ssm:microservice_base_host_${Stage}:1}}/{proxy}'
 
   DocumentsResource:
@@ -210,7 +316,7 @@ Resources:
       RestApiId: !Ref ApiGatewayRestApi
       ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
       PathPart: documents
-  
+
   DocumentsApiService:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -226,24 +332,24 @@ Resources:
       AuthorizationType: NONE
       HttpMethod: ANY
       RequestParameters:
-          method.request.path.proxy: true
-          method.request.header.Authorization: true
+        method.request.path.proxy: true
+        method.request.header.Authorization: true
       Integration:
         Type: HTTP_PROXY
         IntegrationHttpMethod: ANY
         PassthroughBehavior: WHEN_NO_MATCH
         RequestParameters:
-            integration.request.path.proxy: "method.request.path.proxy"
-            integration.request.header.Authorization: "method.request.header.Authorization"
+          integration.request.path.proxy: 'method.request.path.proxy'
+          integration.request.header.Authorization: 'method.request.header.Authorization'
         Uri: !Sub '{{resolve:ssm:microservice_documents_host_${Stage}:1}}/{proxy}'
-     
+
   SearchResource:
     Type: AWS::ApiGateway::Resource
     Properties:
       RestApiId: !Ref ApiGatewayRestApi
       ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
       PathPart: search
-  
+
   SearchApiService:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -259,15 +365,15 @@ Resources:
       AuthorizationType: NONE
       HttpMethod: ANY
       RequestParameters:
-          method.request.path.proxy: true
-          method.request.header.Authorization: true
+        method.request.path.proxy: true
+        method.request.header.Authorization: true
       Integration:
         Type: HTTP_PROXY
         IntegrationHttpMethod: ANY
         PassthroughBehavior: WHEN_NO_MATCH
         RequestParameters:
-            integration.request.path.proxy: "method.request.path.proxy"
-            integration.request.header.Authorization: "method.request.header.Authorization"
+          integration.request.path.proxy: 'method.request.path.proxy'
+          integration.request.header.Authorization: 'method.request.header.Authorization'
         Uri: !Sub '{{resolve:ssm:microservice_search_host_${Stage}:1}}/{proxy}'
 
   MediaResource:
@@ -276,7 +382,7 @@ Resources:
       RestApiId: !Ref ApiGatewayRestApi
       ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
       PathPart: media
-  
+
   MediaApiService:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -292,15 +398,15 @@ Resources:
       AuthorizationType: NONE
       HttpMethod: ANY
       RequestParameters:
-          method.request.path.proxy: true
-          method.request.header.Authorization: true
+        method.request.path.proxy: true
+        method.request.header.Authorization: true
       Integration:
         Type: HTTP_PROXY
         IntegrationHttpMethod: ANY
         PassthroughBehavior: WHEN_NO_MATCH
         RequestParameters:
-            integration.request.path.proxy: "method.request.path.proxy"
-            integration.request.header.Authorization: "method.request.header.Authorization"
+          integration.request.path.proxy: 'method.request.path.proxy'
+          integration.request.header.Authorization: 'method.request.header.Authorization'
         Uri: !Sub '{{resolve:ssm:microservice_media_host_${Stage}:1}}/{proxy}'
 
   ReportsResource:
@@ -309,7 +415,7 @@ Resources:
       RestApiId: !Ref ApiGatewayRestApi
       ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
       PathPart: reports
-  
+
   ReportsApiService:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -325,15 +431,15 @@ Resources:
       AuthorizationType: NONE
       HttpMethod: ANY
       RequestParameters:
-          method.request.path.proxy: true
-          method.request.header.Authorization: true
+        method.request.path.proxy: true
+        method.request.header.Authorization: true
       Integration:
         Type: HTTP_PROXY
         IntegrationHttpMethod: ANY
         PassthroughBehavior: WHEN_NO_MATCH
         RequestParameters:
-            integration.request.path.proxy: "method.request.path.proxy"
-            integration.request.header.Authorization: "method.request.header.Authorization"
+          integration.request.path.proxy: 'method.request.path.proxy'
+          integration.request.header.Authorization: 'method.request.header.Authorization'
         Uri: !Sub '{{resolve:ssm:microservice_reports_host_${Stage}:1}}/{proxy}'
 
   AttachmentsResource:
@@ -342,7 +448,7 @@ Resources:
       RestApiId: !Ref ApiGatewayRestApi
       ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
       PathPart: attachments
-  
+
   AttachmentsApiService:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -358,15 +464,15 @@ Resources:
       AuthorizationType: NONE
       HttpMethod: ANY
       RequestParameters:
-          method.request.path.proxy: true
-          method.request.header.Authorization: true
+        method.request.path.proxy: true
+        method.request.header.Authorization: true
       Integration:
         Type: HTTP_PROXY
         IntegrationHttpMethod: ANY
         PassthroughBehavior: WHEN_NO_MATCH
         RequestParameters:
-            integration.request.path.proxy: "method.request.path.proxy"
-            integration.request.header.Authorization: "method.request.header.Authorization"
+          integration.request.path.proxy: 'method.request.path.proxy'
+          integration.request.header.Authorization: 'method.request.header.Authorization'
         Uri: !Sub '{{resolve:ssm:microservice_attachments_host_${Stage}:1}}/{proxy}'
 
   Deployment:
