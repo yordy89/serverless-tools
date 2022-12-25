@@ -103,113 +103,13 @@ Resources:
         Variables:
           MICROSERVICE_DOCUMENTS_HOST: !Sub '{{resolve:ssm:microservice_documents_host_${Stage}:1}}'
 
-  CloudFrontOriginAccessIdentity:
-    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+  InfrastructureApplication:
+    Type: AWS::Serverless::Application
     Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: 'Serverless website OA'
-
-  FrontendDeployBucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      BucketName: !Sub ${AWS::StackName}-tech
-      AccessControl: Private
-
-  FrontendDeployBucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
-    Properties:
-      Bucket: !Ref FrontendDeployBucket
-      PolicyDocument:
-        Statement:
-          - Sid: PublicReadForGetBucketObjects
-            Effect: Allow
-            Action:
-              - 's3:GetObject'
-            Resource: !Sub 'arn:aws:s3:::${FrontendDeployBucket}/*'
-            Principal: 
-              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
-
-  CloudFrontWAF:
-    Type: AWS::WAFv2::WebACL
-    Properties:
-      Name: CloudFrontWAF
-      Scope: CLOUDFRONT
-      VisibilityConfig:
-        CloudWatchMetricsEnabled: false
-        MetricName: !Sub ${AWS::StackName}-ACL
-        SampledRequestsEnabled: false
-      DefaultAction:
-        Allow: {}
-      Rules:
-        - Name: MySqlInjectionRule
-          Priority: 1
-          Statement:
-            SqliMatchStatement:
-              FieldToMatch:
-                UriPath: {}
-              TextTransformations:
-                - Type: LOWERCASE
-                  Priority: 1
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: !Sub ${AWS::StackName}-MySqlInjectionRule
-          Action:
-            Block: {}
-        - Name: MyXssRule
-          Priority: 2
-          Statement:
-            XssMatchStatement:
-              FieldToMatch:
-                UriPath: {}
-              TextTransformations:
-                - Type: LOWERCASE
-                  Priority: 1
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: !Sub ${AWS::StackName}-MyXssRule
-          Action:
-            Block: {}
-    Condition: IsProd
-
-  CloudfrontDistribution:
-    Type: 'AWS::CloudFront::Distribution'
-    DependsOn:
-      - CloudFrontOriginAccessIdentity
-      - FrontendDeployBucket
-    Properties:
-      DistributionConfig:
-        Comment: 'Cloudfront distribution for buychain ${Stage}'
-        DefaultRootObject: 'index.html'
-        PriceClass: PriceClass_100
-        Enabled: true
-        HttpVersion: http2
-        Origins:
-          - Id: !Sub ${AWS::StackName}-frontend
-            DomainName: !GetAtt FrontendDeployBucket.DomainName
-            S3OriginConfig:
-              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
-        DefaultCacheBehavior:
-          Compress: true
-          AllowedMethods:
-            - GET
-            - HEAD
-            - OPTIONS
-          ForwardedValues:
-            QueryString: false
-          TargetOriginId: !Sub ${AWS::StackName}-frontend
-          ViewerProtocolPolicy: !If
-            - IsProd
-            - redirect-to-https
-            - allow-all
-        WebACLId: !If
-          - IsProd
-          - !GetAtt CloudFrontWAF.Arn
-          - !Ref AWS::NoValue
-      Tags:
-        - Key: Environment
-          Value: !Ref Stage
+      Location: ./applications/infrastructure.yaml
+      Parameters:
+        Stage: !Ref Stage
+        ParentStackName: !Ref AWS::StackName
 
   AuthResource:
     Type: AWS::ApiGateway::Resource
