@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  serverless-tools
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Stage:
+    Type: String
+    Default: 'dev'
+    AllowedValues:
+      - 'dev'
+      - 'demo'
+      - 'prod'
+  ParentStackName:
+    Type: String
+
+Conditions:
+  IsProd: !Equals [!Ref Stage, 'prod']
+
+Resources:
+  CloudFrontOriginAccessIdentity:
+    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment:  !Join ['', [!Ref ParentStackName, '-origin-access-identity']]
+  FrontendDeployBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Join ['', [!Ref ParentStackName, '-tech']]
+      AccessControl: Private
+
+  FrontendDeployBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref FrontendDeployBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource: !Sub 'arn:aws:s3:::${FrontendDeployBucket}/*'
+            Principal: 
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  CloudFrontWAF:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: CloudFrontWAF
+      Scope: CLOUDFRONT
+      VisibilityConfig:
+        CloudWatchMetricsEnabled: false
+        MetricName: !Join ['', [!Ref ParentStackName, '-ACL']]
+        SampledRequestsEnabled: false
+      DefaultAction:
+        Allow: {}
+      Rules:
+        - Name: MySqlInjectionRule
+          Priority: 1
+          Statement:
+            SqliMatchStatement:
+              FieldToMatch:
+                UriPath: {}
+              TextTransformations:
+                - Type: LOWERCASE
+                  Priority: 1
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Join ['', [!Ref ParentStackName, '-MySqlInjectionRule']]
+          Action:
+            Block: {}
+        - Name: MyXssRule
+          Priority: 2
+          Statement:
+            XssMatchStatement:
+              FieldToMatch:
+                UriPath: {}
+              TextTransformations:
+                - Type: LOWERCASE
+                  Priority: 1
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Join ['', [!Ref ParentStackName, '-MyXssRule']]
+          Action:
+            Block: {}
+    Condition: IsProd
+
+  CloudfrontDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    DependsOn:
+      - CloudFrontOriginAccessIdentity
+      - FrontendDeployBucket
+    Properties:
+      DistributionConfig:
+        Comment: !Join ['', [!Ref ParentStackName, '-cloudfront distribution']]
+        DefaultRootObject: 'index.html'
+        PriceClass: PriceClass_100
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - Id: !Join ['', [!Ref ParentStackName, '-frontend']]
+            DomainName: !GetAtt FrontendDeployBucket.DomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+        DefaultCacheBehavior:
+          Compress: true
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: !Join ['', [!Ref ParentStackName, '-frontend']]
+          ViewerProtocolPolicy: !If
+            - IsProd
+            - redirect-to-https
+            - allow-all
+        WebACLId: !If
+          - IsProd
+          - !GetAtt CloudFrontWAF.Arn
+          - !Ref AWS::NoValue
+      Tags:
+        - Key: Environment
+          Value: !Ref Stage
+Outputs:
+  ParentStackName:
+    Description: Parent Stack Name
+    Value: !Ref ParentStackName
+  StackName:
+    Description: Stack Name
+    Value: !Ref AWS::StackName
+  CloudFrontDistributionDomainName:
+    Description: CloudFront Distribution Domain Name
+    Value: !GetAtt CloudfrontDistribution.DomainName

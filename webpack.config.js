@@ -34,6 +34,18 @@ module.exports = {
             }
           ]
         }).apply(compiler)
+    },
+    {
+      apply: (compiler) =>
+        new CopyPlugin({
+          patterns: [
+            {
+              context: 'src/applications',
+              from: '**/**',
+              to: `.aws-sam/build/applications`
+            }
+          ]
+        }).apply(compiler)
     }
   ],
   externals: ['aws-sdk', 'pdf']

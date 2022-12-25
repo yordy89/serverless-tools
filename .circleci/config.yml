@@ -17,7 +17,7 @@ commands:
         default: 'dev'
         type: string
     steps:
-      - run: sam deploy --stack-name <<parameters.stackName>> --s3-bucket $S3_BUCKET --capabilities CAPABILITY_IAM --region us-east-1 --parameter-overrides Stage=<<parameters.stage>> --no-confirm-changeset --no-fail-on-empty-changeset
+      - run: sam deploy --stack-name <<parameters.stackName>> --s3-bucket $S3_BUCKET --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --region us-east-1 --parameter-overrides Stage=<<parameters.stage>> --no-confirm-changeset --no-fail-on-empty-changeset
 
 jobs:
   lint-test:
